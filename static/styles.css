@@ -211,6 +211,7 @@ button:disabled {
     height: 100%;
     min-height: 100vh;
     position: relative;
+    overflow: hidden;
 }
 
 /* JSMind theme customization */
@@ -259,19 +260,74 @@ jmexpander:hover {
     background-color: #f8f9fa;
     z-index: 1000;
     display: none;
-    overflow: hidden;
 }
 
 .mindmap-overlay.active {
     display: block;
 }
 
+.mindmap-content {
+    display: flex;
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.video-section {
+    display: none; /* Initially hidden */
+    width: 40%;
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-right: 1px solid #ddd;
+    height: 100vh;
+    overflow-y: auto;
+}
+
+.video-section.active {
+    display: block;
+}
+
+.mindmap-section {
+    flex: 1;
+    transition: width 0.3s ease;
+    position: relative;
+    height: 100%;
+    overflow: hidden;
+}
+
+
+#overlayVideo {
+    width: 100%;
+    max-height: 40vh;
+    margin-bottom: 20px;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.video-section.active {
+    display: block;
+}
+
+.video-section video {
+    width: 100%;
+    max-height: 70vh;
+    margin-bottom: 20px;
+}
+
+.video-info {
+    padding: 15px;
+    background-color: white;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-top: 15px;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #333;
+}
+
 .fullscreen-mindmap {
-    position: absolute;
     width: 100%;
     height: 100%;
-    background-color: #f8f9fa;
-    transform-origin: center center;
 }
 
 .mindmap-toolbar {
@@ -287,6 +343,11 @@ jmexpander:hover {
     flex-direction: column;
     gap: 10px;
 }
+
+.mindmap-toolbar.with-video {
+    left: calc(40% + 20px);
+}
+
 
 .tool-button {
     display: flex;

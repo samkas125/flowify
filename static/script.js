@@ -29,8 +29,7 @@ async function initWhisper(modelName) {
 
         whisperPipeline = await pipeline('automatic-speech-recognition', modelName, {
             progress_callback: (progress) => {
-                let percent = Math.round(progress.progress);
-                if (percent == null) percent = 0;
+                const percent = Math.round(progress.progress);
                 modelStatus.textContent = `Loading model... ${percent}%`;
                 statusDiv.textContent = `Loading model... ${percent}%`;
             }
@@ -256,17 +255,35 @@ class TopicMindmap {
         this.isPanning = false;
         this.panX = 0;
         this.panY = 0;
+        this.isEditing = false;
+        this.segmentData = new Map();
+        
+        // Get DOM elements
+        this.mainVideo = document.getElementById('videoPlayer');
+        this.overlayVideo = document.getElementById('overlayVideo');
+        this.videoSection = document.getElementById('videoSection');
+        this.videoInfo = document.getElementById('videoInfo');
+        this.toolbar = document.querySelector('.mindmap-toolbar');
+        this.mindmapOverlay = document.getElementById('mindmapOverlay');
+        
+        // Initially hide video section
+        if (this.videoSection) {
+            this.videoSection.style.display = 'none';
+        }
+        
         this.initialize();
         this.setupToolbar();
+        this.setupNodeInteraction();
     }
 
     initialize() {
         const options = {
             container: this.container,
             theme: 'primary',
-            editable: false,
+            editable: true,
             support_html: true,
             view: {
+                draggable: true,
                 hmargin: 300,
                 vmargin: 200,
                 line_width: 2,
@@ -281,29 +298,233 @@ class TopicMindmap {
         };
 
         try {
-            // Initialize mindmap
             this.mindmap = new jsMind(options);
             const emptyMind = this.createEmptyMindMap();
             this.mindmap.show(emptyMind);
             
-            // Ensure container is properly set up
             const container = document.querySelector('.fullscreen-mindmap');
             container.style.transformOrigin = '0 0';
             container.style.position = 'absolute';
             container.style.width = '100%';
             container.style.height = '100%';
             
-            // Set up the mindmap wrapper to handle overflow
             const mindmapWrapper = document.getElementById('mindmap');
             mindmapWrapper.style.position = 'absolute';
             mindmapWrapper.style.width = '100%';
             mindmapWrapper.style.height = '100%';
             mindmapWrapper.style.overflow = 'visible';
             
+            this.setupNodeInteraction();
             this.setupPanning();
         } catch (error) {
             console.error('Error initializing mindmap:', error);
         }
+    }
+
+    setupNodeInteraction() {
+        // Remove any existing event listeners
+        const container = document.getElementById(this.container);
+        if (!container) return;
+
+        container.addEventListener('click', (e) => {
+            const target = e.target;
+            if (target.tagName.toLowerCase() === 'jmnode') {
+                const nodeId = target.getAttribute('nodeid');
+                if (nodeId) {
+                    this.handleNodeClick(nodeId);
+                }
+            }
+        });
+    }
+
+    handleNodeClick(nodeId) {
+        console.log('Node clicked:', nodeId);
+        const segmentInfo = this.segmentData.get(nodeId);
+        console.log('Segment info:', segmentInfo);
+        
+        if (segmentInfo && segmentInfo.timestamp !== undefined) {
+            // Show video section
+            if (this.videoSection) {
+                this.videoSection.style.display = 'block';
+                console.log('Video section displayed');
+            }
+            
+            // Adjust layout
+            if (this.toolbar) {
+                this.toolbar.classList.add('with-video');
+            }
+            
+            // Setup video
+            if (this.mainVideo && this.mainVideo.src && this.overlayVideo) {
+                console.log('Setting up video playback at time:', segmentInfo.timestamp);
+                
+                // Set video source if needed
+                if (this.overlayVideo.src !== this.mainVideo.src) {
+                    this.overlayVideo.src = this.mainVideo.src;
+                }
+                
+                // Extract timestamp from content if available
+                let timeInSeconds = segmentInfo.timestamp;
+                
+                // If the timestamp is a string with format [HH:MM:SS], convert it
+                if (typeof timeInSeconds === 'string' && timeInSeconds.match(/^\[\d{2}:\d{2}:\d{2}\]$/)) {
+                    const [hours, minutes, seconds] = timeInSeconds
+                        .slice(1, -1)  // Remove brackets
+                        .split(':')    // Split into components
+                        .map(Number);  // Convert to numbers
+                    
+                    timeInSeconds = hours * 3600 + minutes * 60 + seconds;
+                }
+                
+                // Ensure we have a valid number
+                if (!isNaN(timeInSeconds)) {
+                    console.log('Seeking to time:', timeInSeconds);
+                    this.overlayVideo.currentTime = timeInSeconds;
+                    this.overlayVideo.play().catch(error => {
+                        console.error('Error playing video:', error);
+                    });
+                    
+                    // Update info
+                    if (this.videoInfo) {
+                        const timestamp = this.formatTimestamp(timeInSeconds);
+                        const content = segmentInfo.content.replace(/\[\d{2}:\d{2}:\d{2}\]\s*/, '');
+                        this.videoInfo.textContent = `${timestamp}: ${content}`;
+                    }
+                } else {
+                    console.error('Invalid timestamp:', segmentInfo.timestamp);
+                }
+            }
+            
+            // Update layout
+            this.updateLayout();
+        }
+    }
+
+    updateLayout() {
+        // Adjust mindmap section width when video is shown
+        const mindmapSection = document.querySelector('.mindmap-section');
+        const videoWidth = '40%';
+        const mindmapWidth = '60%';
+        
+        if (this.videoSection && this.videoSection.style.display === 'block') {
+            this.videoSection.style.width = videoWidth;
+            if (mindmapSection) {
+                mindmapSection.style.width = mindmapWidth;
+            }
+        }
+        
+        // Force mindmap refresh
+        if (this.mindmap) {
+            this.mindmap.resize();
+        }
+    }
+
+
+    formatTimestamp(seconds) {
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const secs = Math.floor(seconds % 60);
+        return `[${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}]`;
+    }
+
+    setupNodeEditing() {
+        // Add double-click event listener for editing nodes
+        const container = document.getElementById(this.container);
+        container.addEventListener('dblclick', (e) => {
+            const target = e.target;
+            if (target.tagName.toLowerCase() === 'jmnode') {
+                this.editNode(target);
+            }
+        });
+
+        // Add node drag and drop functionality
+        container.addEventListener('mousedown', (e) => {
+            if (!this.isPanning && e.target.tagName.toLowerCase() === 'jmnode') {
+                this.startNodeDrag(e);
+            }
+        });
+    }
+
+    editNode(nodeElement) {
+        if (this.isPanning) return;
+        
+        const nodeId = nodeElement.getAttribute('nodeid');
+        const currentText = this.mindmap.get_node(nodeId).topic;
+        
+        // Create and style the input element
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = currentText;
+        input.style.width = Math.max(nodeElement.offsetWidth, 100) + 'px';
+        input.style.height = nodeElement.offsetHeight + 'px';
+        input.style.position = 'absolute';
+        input.style.left = nodeElement.offsetLeft + 'px';
+        input.style.top = nodeElement.offsetTop + 'px';
+        input.style.zIndex = '1000';
+        input.style.padding = '4px';
+        input.style.border = '2px solid #3498db';
+        input.style.borderRadius = '4px';
+        input.style.backgroundColor = 'white';
+        
+        // Replace node with input
+        nodeElement.style.visibility = 'hidden';
+        nodeElement.parentNode.appendChild(input);
+        input.focus();
+        input.select();
+
+        const finishEditing = () => {
+            const newText = input.value.trim();
+            if (newText) {
+                this.mindmap.update_node(nodeId, newText);
+            }
+            nodeElement.style.visibility = 'visible';
+            input.remove();
+        };
+
+        input.addEventListener('blur', finishEditing);
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                finishEditing();
+            } else if (e.key === 'Escape') {
+                nodeElement.style.visibility = 'visible';
+                input.remove();
+            }
+        });
+    }
+
+    startNodeDrag(e) {
+        if (this.isPanning) return;
+
+        const nodeElement = e.target;
+        const nodeId = nodeElement.getAttribute('nodeid');
+        if (!nodeId) return;
+
+        const startX = e.clientX;
+        const startY = e.clientY;
+        const originalLeft = nodeElement.offsetLeft;
+        const originalTop = nodeElement.offsetTop;
+
+        const mouseMoveHandler = (e) => {
+            const dx = (e.clientX - startX) / this.zoomScale;
+            const dy = (e.clientY - startY) / this.zoomScale;
+            
+            nodeElement.style.left = (originalLeft + dx) + 'px';
+            nodeElement.style.top = (originalTop + dy) + 'px';
+            
+            // Update connected lines
+            this.mindmap.layout.layout();
+        };
+
+        const mouseUpHandler = () => {
+            document.removeEventListener('mousemove', mouseMoveHandler);
+            document.removeEventListener('mouseup', mouseUpHandler);
+            
+            // Ensure the mindmap updates its internal positions
+            this.mindmap.layout.layout();
+        };
+
+        document.addEventListener('mousemove', mouseMoveHandler);
+        document.addEventListener('mouseup', mouseUpHandler);
     }
 
     setupPanning() {
@@ -404,17 +625,34 @@ class TopicMindmap {
         const zoomInButton = document.getElementById('zoomInButton');
         const zoomOutButton = document.getElementById('zoomOutButton');
         const resetButton = document.getElementById('resetButton');
+        const panButton = document.getElementById('panButton');
 
         if (backButton) {
             backButton.addEventListener('click', () => {
+                // Hide video section when closing
+                this.videoSection.classList.remove('active');
+                this.toolbar.classList.remove('with-video');
+                
+                // Stop video playback
+                if (this.overlayVideo.src) {
+                    this.overlayVideo.pause();
+                }
+                
                 document.getElementById('mindmapOverlay').classList.remove('active');
             });
+
         }
 
         if (editButton) {
             editButton.addEventListener('click', () => {
-                if (this.mindmap) {
+                this.isEditing = !this.isEditing;
+                editButton.classList.toggle('active');
+                if (this.isEditing) {
                     this.mindmap.enable_edit();
+                    editButton.innerHTML = '<i class="fas fa-edit"></i> Done';
+                } else {
+                    this.mindmap.disable_edit();
+                    editButton.innerHTML = '<i class="fas fa-edit"></i> Edit';
                 }
             });
         }
@@ -488,10 +726,13 @@ class TopicMindmap {
                 id: 'root',
                 topic: 'Video Topics',
                 direction: 'center',
-                expanded: true,     // Root node is expanded
+                expanded: true,
                 children: []
             }
         };
+
+        // Clear previous segment data
+        this.segmentData.clear();
 
         // Group segments by topic
         const topicGroups = new Map();
@@ -509,18 +750,27 @@ class TopicMindmap {
                 id: `topic_${nodeId}`,
                 topic: topicName,
                 direction: this.getDirection(nodeId, topicGroups.size),
-                expanded: false,    // Topic nodes start collapsed
+                expanded: false,
                 children: []
             };
 
-            // Add content nodes
+            // Add content nodes with timestamps
             segments.forEach((segment, index) => {
-                const contentSnippet = segment.content[0]?.slice(0, 50) + '...' || '';
+                const timestamp = this.extractTimestamp(segment.content[0]);
+                const contentSnippet = segment.content[0]?.replace(/\[\d{2}:\d{2}:\d{2}\]\s*/, '').slice(0, 50) + '...';
+                const contentNodeId = `content_${nodeId}_${index}`;
+                
                 topicNode.children.push({
-                    id: `content_${nodeId}_${index}`,
+                    id: contentNodeId,
                     topic: contentSnippet,
                     direction: topicNode.direction,
-                    expanded: false  // Content nodes start collapsed
+                    expanded: false
+                });
+
+                // Store segment data with timestamp
+                this.segmentData.set(contentNodeId, {
+                    timestamp: timestamp,
+                    content: segment.content[0]
                 });
             });
 
@@ -529,6 +779,17 @@ class TopicMindmap {
         });
 
         return mind;
+    }
+
+    extractTimestamp(text) {
+        const match = text.match(/\[(\d{2}):(\d{2}):(\d{2})\]/);
+        if (match) {
+            const [_, hours, minutes, seconds] = match;
+            const timeInSeconds = parseInt(hours) * 3600 + parseInt(minutes) * 60 + parseInt(seconds);
+            console.log('Extracted timestamp:', timeInSeconds, 'from text:', text);
+            return timeInSeconds;
+        }
+        return 0;
     }
 
     getDirection(index, total) {
@@ -547,14 +808,38 @@ class TopicMindmap {
         }
 
         try {
+            // Clear previous data
+            this.segmentData.clear();
+            
+            // Create and show new mindmap
             const mindData = this.createMindMapData(segments);
             this.mindmap.show(mindData);
             
-            // Reset pan and zoom when showing new data
+            // Reset view and show overlay
             this.resetView();
+            if (this.mindmapOverlay) {
+                this.mindmapOverlay.classList.add('active');
+            }
             
-            // Show the fullscreen overlay
-            document.getElementById('mindmapOverlay').classList.add('active');
+            // Hide video section initially
+            if (this.videoSection) {
+                this.videoSection.style.display = 'none';
+            }
+            
+            // Reset mindmap section to full width
+            const mindmapSection = document.querySelector('.mindmap-section');
+            if (mindmapSection) {
+                mindmapSection.style.width = '100%';
+            }
+            
+            // Remove video-related classes
+            if (this.toolbar) {
+                this.toolbar.classList.remove('with-video');
+            }
+            
+            // Reinitialize node interaction
+            this.setupNodeInteraction();
+            
         } catch (error) {
             console.error('Error updating mindmap:', error);
         }

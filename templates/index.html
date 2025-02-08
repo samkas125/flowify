@@ -64,27 +64,40 @@
 
     <!-- Mindmap Overlay -->
     <div id="mindmapOverlay" class="mindmap-overlay">
-        <div class="mindmap-toolbar">
-            <button id="backButton" class="tool-button">
-                <i class="fas fa-arrow-left"></i> Back
-            </button>
-            <button id="editButton" class="tool-button">
-                <i class="fas fa-edit"></i> Edit
-            </button>
-            <button id="zoomInButton" class="tool-button">
-                <i class="fas fa-search-plus"></i> Zoom In
-            </button>
-            <button id="zoomOutButton" class="tool-button">
-                <i class="fas fa-search-minus"></i> Zoom Out
-            </button>
-            <button id="panButton" class="tool-button">
-                <i class="fas fa-hand-paper"></i> Pan
-            </button>
-            <button id="resetButton" class="tool-button">
-                <i class="fas fa-sync"></i> Reset
-            </button>
+        <div class="mindmap-content">
+            <!-- Video Section -->
+            <div id="videoSection" class="video-section">
+                <video id="overlayVideo" controls>
+                    Your browser does not support the video element.
+                </video>
+                <div id="videoInfo" class="video-info"></div>
+            </div>
+            
+            <!-- Mindmap Section -->
+            <div class="mindmap-section">
+                <div class="mindmap-toolbar">
+                    <button id="backButton" class="tool-button">
+                        <i class="fas fa-arrow-left"></i> Back
+                    </button>
+                    <button id="editButton" class="tool-button">
+                        <i class="fas fa-edit"></i> Edit
+                    </button>
+                    <button id="zoomInButton" class="tool-button">
+                        <i class="fas fa-search-plus"></i> Zoom In
+                    </button>
+                    <button id="zoomOutButton" class="tool-button">
+                        <i class="fas fa-search-minus"></i> Zoom Out
+                    </button>
+                    <button id="panButton" class="tool-button">
+                        <i class="fas fa-hand-paper"></i> Pan
+                    </button>
+                    <button id="resetButton" class="tool-button">
+                        <i class="fas fa-sync"></i> Reset
+                    </button>
+                </div>
+                <div id="mindmap" class="fullscreen-mindmap"></div>
+            </div>
         </div>
-        <div id="mindmap" class="fullscreen-mindmap"></div>
     </div>
 
     <!-- Scripts -->
