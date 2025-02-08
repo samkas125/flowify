@@ -29,7 +29,8 @@ async function initWhisper(modelName) {
 
         whisperPipeline = await pipeline('automatic-speech-recognition', modelName, {
             progress_callback: (progress) => {
-                const percent = Math.round(progress.progress * 100);
+                let percent = Math.round(progress.progress);
+                if (percent == null) percent = 0;
                 modelStatus.textContent = `Loading model... ${percent}%`;
                 statusDiv.textContent = `Loading model... ${percent}%`;
             }
@@ -143,9 +144,10 @@ async function transcribeAudio(audioData) {
 }
 
 function formatTimestamp(seconds) {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = Math.floor(seconds % 60);
+    // const hours = Math.floor(seconds / 3600);
+    // const minutes = Math.floor((seconds % 3600) / 60);
+    // const secs = Math.floor(seconds % 60);
+    return `[${seconds}]`
     return `[${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}]`;
 }
 
