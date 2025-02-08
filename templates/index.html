@@ -3,679 +3,105 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Video Topic Analysis</title>
-    <style>
-        :root {
-            --primary-color: #2563eb;
-            --secondary-color: #1e40af;
-            --success-color: #16a34a;
-            --error-color: #dc2626;
-            --background-color: #f1f5f9;
-            --card-background: #ffffff;
-            --text-primary: #1e293b;
-            --text-secondary: #475569;
-            --border-color: #e2e8f0;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            line-height: 1.5;
-            color: var(--text-primary);
-            background-color: var(--background-color);
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 2rem;
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 2rem;
-        }
-
-        .header h1 {
-            font-size: 2.5rem;
-            color: var(--text-primary);
-            margin-bottom: 0.5rem;
-        }
-
-        .header p {
-            color: var(--text-secondary);
-            font-size: 1.1rem;
-        }
-
-        .main-content {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 2rem;
-        }
-
-        @media (max-width: 768px) {
-            .main-content {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .card {
-            background: var(--card-background);
-            border-radius: 0.75rem;
-            padding: 1.5rem;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-
-        .card-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-            color: var(--text-primary);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        /* Input Section Styles */
-        .input-section {
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-        }
-
-        .model-selector {
-            width: 100%;
-        }
-
-        .model-selector select {
-            width: 100%;
-            padding: 0.75rem;
-            border-radius: 0.5rem;
-            border: 1px solid var(--border-color);
-            background-color: white;
-            font-size: 1rem;
-            color: var(--text-primary);
-        }
-
-        .file-upload {
-            border: 2px dashed var(--border-color);
-            border-radius: 0.75rem;
-            padding: 2rem;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .file-upload:hover {
-            border-color: var(--primary-color);
-            background-color: rgba(37, 99, 235, 0.05);
-        }
-
-        .file-upload.dragover {
-            border-color: var(--primary-color);
-            background-color: rgba(37, 99, 235, 0.1);
-        }
-
-        .file-upload input {
-            display: none;
-        }
-
-        .file-upload-icon {
-            font-size: 2rem;
-            color: var(--primary-color);
-            margin-bottom: 1rem;
-        }
-
-        .file-upload-text {
-            color: var(--text-secondary);
-        }
-
-        .video-preview {
-            width: 100%;
-            border-radius: 0.5rem;
-            overflow: hidden;
-            display: none;
-        }
-
-        .video-preview video {
-            width: 100%;
-            height: auto;
-        }
-
-        /* Progress Section Styles */
-        .progress-section {
-            margin-top: 1.5rem;
-        }
-
-        .progress-bar {
-            width: 100%;
-            height: 0.5rem;
-            background-color: var(--border-color);
-            border-radius: 0.25rem;
-            overflow: hidden;
-            margin: 1rem 0;
-        }
-
-        .progress-bar-fill {
-            height: 100%;
-            background-color: var(--primary-color);
-            width: 0%;
-            transition: width 0.3s ease;
-        }
-
-        .status-message {
-            color: var(--text-secondary);
-            font-size: 0.875rem;
-            margin-top: 0.5rem;
-        }
-
-        /* Results Section Styles */
-        .results-section {
-            display: none;
-        }
-
-        .transcription {
-            margin-bottom: 2rem;
-        }
-
-        .transcription-text {
-            white-space: pre-wrap;
-            font-size: 0.875rem;
-            line-height: 1.7;
-            color: var(--text-secondary);
-            max-height: 300px;
-            overflow-y: auto;
-            padding: 1rem;
-            background-color: #f8fafc;
-            border-radius: 0.5rem;
-        }
-
-        .topics-list {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-
-        .topic-item {
-            padding: 1rem;
-            background-color: #f8fafc;
-            border-radius: 0.5rem;
-            border-left: 4px solid var(--primary-color);
-        }
-
-        .topic-title {
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 0.5rem;
-        }
-
-        .topic-content {
-            font-size: 0.875rem;
-            color: var(--text-secondary);
-            white-space: pre-wrap;
-        }
-
-        /* Button Styles */
-        .button-group {
-            display: flex;
-            gap: 1rem;
-            margin-top: 1.5rem;
-        }
-
-        .button {
-            padding: 0.75rem 1.5rem;
-            border-radius: 0.5rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            border: none;
-            font-size: 0.875rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .button-primary {
-            background-color: var(--primary-color);
-            color: white;
-        }
-
-        .button-primary:hover {
-            background-color: var(--secondary-color);
-        }
-
-        .button-secondary {
-            background-color: white;
-            color: var(--primary-color);
-            border: 1px solid var(--primary-color);
-        }
-
-        .button-secondary:hover {
-            background-color: rgba(37, 99, 235, 0.05);
-        }
-
-        .button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        /* Alert Styles */
-        .alert {
-            padding: 1rem;
-            border-radius: 0.5rem;
-            margin-bottom: 1rem;
-            display: none;
-        }
-
-        .alert-error {
-            background-color: #fee2e2;
-            color: var(--error-color);
-            border: 1px solid #fecaca;
-        }
-
-        .alert-success {
-            background-color: #dcfce7;
-            color: var(--success-color);
-            border: 1px solid #bbf7d0;
-        }
-
-        /* Loading Spinner */
-        .spinner {
-            width: 1.5rem;
-            height: 1.5rem;
-            border: 2px solid #f3f3f3;
-            border-top: 2px solid var(--primary-color);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            display: none;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-    </style>
+    <title>Video Topic Analyzer</title>
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link type="text/css" rel="stylesheet" href="https://unpkg.com/jsmind@0.8.6/style/jsmind.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
 <body>
     <div class="container">
-        <header class="header">
-            <h1>Video Topic Analysis</h1>
-            <p>Upload a video to transcribe and analyze its topics</p>
-        </header>
+        <h1>Video Topic Analyzer</h1>
 
-        <main class="main-content">
-            <section class="card">
-                <div class="input-section">
-                    <div class="model-selector">
-                        <select id="modelSelector">
-                            <option value="Xenova/whisper-tiny.en">Whisper Tiny (Fast, Less Accurate)</option>
-                            <option value="Xenova/whisper-base.en">Whisper Base (Better)</option>
-                            <option value="Xenova/whisper-small.en">Whisper Small (Good)</option>
-                            <option value="Xenova/whisper-medium.en" selected>Whisper Medium (Best Balance)</option>
-                        </select>
-                    </div>
+        <div class="upload-section">
+            <div class="upload-container">
+                <label for="fileInput" class="upload-button">
+                    Choose Video File
+                </label>
+                <input type="file" id="fileInput" accept="video/*">
+            </div>
 
-                    <div class="file-upload" id="dropZone">
-                        <input type="file" id="fileInput" accept="video/*">
-                        <div class="file-upload-icon">📁</div>
-                        <div class="file-upload-text">
-                            <p>Drag and drop your video here or click to browse</p>
-                            <p class="text-sm text-gray-500">Supported formats: MP4, AVI, MOV, WebM</p>
-                        </div>
-                    </div>
+            <div class="model-selector">
+                <select id="modelSelector">
+                    <option value="Xenova/whisper-tiny.en">Whisper Tiny (Fast)</option>
+                    <option value="Xenova/whisper-base.en">Whisper Base</option>
+                    <option value="Xenova/whisper-small.en" selected>Whisper Small</option>
+                    <option value="Xenova/whisper-medium.en">Whisper Medium</option>
+                </select>
+                <div id="modelStatus"></div>
+            </div>
+        </div>
 
-                    <div class="video-preview" id="videoPreview">
-                        <video id="videoPlayer" controls></video>
-                    </div>
+        <div class="video-container">
+            <video id="videoPlayer" controls></video>
+        </div>
 
-                    <div class="alert alert-error" id="errorAlert"></div>
-                    <div class="alert alert-success" id="successAlert"></div>
+        <div class="controls">
+            <button id="transcribeButton" disabled>Transcribe Video</button>
+            <button id="analyzeButton">Analyze Topics</button>
+        </div>
 
-                    <div class="progress-section">
-                        <div class="progress-bar">
-                            <div class="progress-bar-fill" id="progressBar"></div>
-                        </div>
-                        <div class="status-message" id="statusMessage">Ready to process video</div>
-                        <div class="spinner" id="spinner"></div>
-                    </div>
+        <div class="progress-container">
+            <div id="status">Ready to process</div>
+            <div class="progress-bar">
+                <div class="progress"></div>
+            </div>
+        </div>
 
-                    <div class="button-group">
-                        <button id="processButton" class="button button-primary" disabled>
-                            Process Video
-                        </button>
-                        <button id="downloadButton" class="button button-secondary" disabled>
-                            Download Results
-                        </button>
-                    </div>
-                </div>
-            </section>
+        <div class="content-container">
+            <div class="transcription-container">
+                <h2>Transcription</h2>
+                <div id="transcription"></div>
+            </div>
 
-            <section class="card results-section" id="resultsSection">
-                <div class="transcription">
-                    <h3 class="card-title">Transcription</h3>
-                    <div class="transcription-text" id="transcription"></div>
-                </div>
-
-                <div class="topics">
-                    <h3 class="card-title">Topics</h3>
-                    <div class="topics-list" id="topicsList"></div>
-                </div>
-            </section>
-        </main>
+            <div class="topics-container">
+                <h2>Topics</h2>
+                <div id="topicResults"></div>
+            </div>
+        </div>
     </div>
 
+    <!-- Mindmap Overlay -->
+    <div id="mindmapOverlay" class="mindmap-overlay">
+        <div class="mindmap-toolbar">
+            <button id="backButton" class="tool-button">
+                <i class="fas fa-arrow-left"></i> Back
+            </button>
+            <button id="editButton" class="tool-button">
+                <i class="fas fa-edit"></i> Edit
+            </button>
+            <button id="zoomInButton" class="tool-button">
+                <i class="fas fa-search-plus"></i> Zoom In
+            </button>
+            <button id="zoomOutButton" class="tool-button">
+                <i class="fas fa-search-minus"></i> Zoom Out
+            </button>
+            <button id="panButton" class="tool-button">
+                <i class="fas fa-hand-paper"></i> Pan
+            </button>
+            <button id="resetButton" class="tool-button">
+                <i class="fas fa-sync"></i> Reset
+            </button>
+        </div>
+        <div id="mindmap" class="fullscreen-mindmap"></div>
+    </div>
+
+    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/@xenova/transformers@2.16.0"></script>
-    <script type="module">
-        import { pipeline, env } from 'https://unpkg.com/@xenova/transformers@2.16.0/dist/transformers.min.js';
-
-        class VideoAnalyzer {
-            constructor() {
-                this.initializeElements();
-                this.initializeEventListeners();
-                this.whisperPipeline = null;
-                this.transcriptText = '';
-                this.initializeWhisper();
-            }
-
-            initializeElements() {
-                // Input elements
-                this.fileInput = document.getElementById('fileInput');
-                this.dropZone = document.getElementById('dropZone');
-                this.modelSelector = document.getElementById('modelSelector');
-                
-                // Video elements
-                this.videoPreview = document.getElementById('videoPreview');
-                this.videoPlayer = document.getElementById('videoPlayer');
-                
-                // Button elements
-                this.processButton = document.getElementById('processButton');
-                this.downloadButton = document.getElementById('downloadButton');
-                
-                // Status and progress elements
-                this.progressBar = document.getElementById('progressBar');
-                this.statusMessage = document.getElementById('statusMessage');
-                this.spinner = document.getElementById('spinner');
-                this.errorAlert = document.getElementById('errorAlert');
-                this.successAlert = document.getElementById('successAlert');
-                
-                // Results elements
-                this.resultsSection = document.getElementById('resultsSection');
-                this.transcription = document.getElementById('transcription');
-                this.topicsList = document.getElementById('topicsList');
-            }
-
-            initializeEventListeners() {
-                // File input events
-                this.fileInput.addEventListener('change', this.handleFileSelect.bind(this));
-                this.dropZone.addEventListener('dragover', this.handleDragOver.bind(this));
-                this.dropZone.addEventListener('dragleave', this.handleDragLeave.bind(this));
-                this.dropZone.addEventListener('drop', this.handleDrop.bind(this));
-                this.dropZone.addEventListener('click', () => this.fileInput.click());
-                
-                // Button events
-                this.processButton.addEventListener('click', this.processVideo.bind(this));
-                this.downloadButton.addEventListener('click', this.downloadResults.bind(this));
-                
-                // Model selector event
-                this.modelSelector.addEventListener('change', this.initializeWhisper.bind(this));
-            }
-
-            async initializeWhisper() {
-                try {
-                    const modelName = this.modelSelector.value;
-                    this.updateStatus('Loading Whisper model...');
-                    this.showSpinner();
-                    
-                    this.whisperPipeline = await pipeline('automatic-speech-recognition', modelName, {
-                        progress_callback: (progress) => {
-                            const percent = Math.round(progress.progress * 100);
-                            this.updateStatus(`Loading model... ${percent}%`);
-                        }
-                    });
-
-                    this.updateStatus('Model loaded successfully');
-                    this.hideSpinner();
-                    this.showSuccess('Model loaded successfully');
-                    
-                    if (this.fileInput.files.length > 0) {
-                        this.processButton.disabled = false;
-                    }
-                } catch (error) {
-                    this.showError(`Error loading model: ${error.message}`);
-                    this.hideSpinner();
-                }
-            }
-
-            handleFileSelect(event) {
-                const file = event.target.files[0];
-                if (file) {
-                    this.processVideoFile(file);
-                }
-            }
-
-            handleDragOver(event) {
-                event.preventDefault();
-                this.dropZone.classList.remove('dragover');
-            }
-
-            handleDrop(event) {
-                event.preventDefault();
-                this.dropZone.classList.remove('dragover');
-                const file = event.dataTransfer.files[0];
-                if (file) {
-                    this.processVideoFile(file);
-                }
-            }
-
-            processVideoFile(file) {
-                if (!file.type.startsWith('video/')) {
-                    this.showError('Please upload a video file');
-                    return;
-                }
-
-                const validTypes = ['video/mp4', 'video/webm', 'video/avi', 'video/quicktime'];
-                if (!validTypes.includes(file.type)) {
-                    this.showError('Unsupported video format. Please use MP4, WebM, AVI, or MOV.');
-                    return;
-                }
-
-                const videoURL = URL.createObjectURL(file);
-                this.videoPlayer.src = videoURL;
-                this.videoPreview.style.display = 'block';
-                this.processButton.disabled = !this.whisperPipeline;
-                this.downloadButton.disabled = true;
-                this.clearResults();
-                this.updateStatus('Video loaded. Ready to process.');
-                this.showSuccess('Video loaded successfully');
-            }
-
-            async processVideo() {
-                try {
-                    this.processButton.disabled = true;
-                    const videoFile = this.fileInput.files[0];
-
-                    if (!videoFile) {
-                        throw new Error('No video file selected');
-                    }
-
-                    // Extract audio and transcribe
-                    this.updateStatus('Extracting audio...');
-                    this.showSpinner();
-                    const audioData = await this.extractAudio(videoFile);
-                    const transcript = await this.transcribeAudio(audioData);
-
-                    // Send to backend for topic segmentation
-                    this.updateStatus('Analyzing topics...');
-                    const formData = new FormData();
-                    formData.append('video', videoFile);
-                    formData.append('transcript', transcript);
-
-                    const response = await fetch('/upload', {
-                        method: 'POST',
-                        body: formData
-                    });
-
-                    if (!response.ok) {
-                        throw new Error('Failed to process video');
-                    }
-
-                    const results = await response.json();
-                    this.displayResults(results);
-                    this.downloadButton.disabled = false;
-                    this.updateStatus('Processing complete!');
-                    this.showSuccess('Video processed successfully');
-                    this.hideSpinner();
-
-                } catch (error) {
-                    this.showError(error.message);
-                    this.processButton.disabled = false;
-                    this.hideSpinner();
-                }
-            }
-
-            async extractAudio(videoFile) {
-                try {
-                    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                    const arrayBuffer = await videoFile.arrayBuffer();
-                    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-                    return this.convertAudioBuffer(audioBuffer);
-                } catch (error) {
-                    throw new Error(`Failed to extract audio: ${error.message}`);
-                }
-            }
-
-            convertAudioBuffer(audioBuffer) {
-                const audioData = audioBuffer.getChannelData(0);
-                const targetSampleRate = 16000;
-                const resamplingRatio = targetSampleRate / audioBuffer.sampleRate;
-                const resampledLength = Math.floor(audioData.length * resamplingRatio);
-                const resampledData = new Float32Array(resampledLength);
-
-                for (let i = 0; i < resampledLength; i++) {
-                    const originalIndex = Math.floor(i / resamplingRatio);
-                    resampledData[i] = audioData[originalIndex];
-                }
-
-                return resampledData;
-            }
-
-            async transcribeAudio(audioData) {
-                const chunkDuration = 30;
-                const samplesPerChunk = chunkDuration * 16000;
-                const totalChunks = Math.ceil(audioData.length / samplesPerChunk);
-
-                let fullTranscript = '';
-
-                for (let i = 0; i < totalChunks; i++) {
-                    const start = i * samplesPerChunk;
-                    const end = Math.min(start + samplesPerChunk, audioData.length);
-                    const chunk = audioData.slice(start, end);
-
-                    this.updateProgress((i + 1) / totalChunks * 100);
-                    this.updateStatus(`Transcribing chunk ${i + 1}/${totalChunks}`);
-
-                    const result = await this.whisperPipeline(chunk, {
-                        chunk_length_s: chunkDuration,
-                        stride_length_s: 5,
-                        return_timestamps: true
-                    });
-
-                    fullTranscript += result.text + ' ';
-                }
-
-                return fullTranscript.trim();
-            }
-
-            displayResults(results) {
-                this.resultsSection.style.display = 'block';
-                this.transcription.textContent = results.transcript || '';
-
-                // Display topics
-                this.topicsList.innerHTML = '';
-                results.results.forEach(result => {
-                    const topicElement = document.createElement('div');
-                    topicElement.className = 'topic-item';
-                    topicElement.innerHTML = `
-                        <div class="topic-title">${result.topic_name}</div>
-                        <div class="topic-content">${result.content}</div>
-                    `;
-                    this.topicsList.appendChild(topicElement);
-                });
-            }
-
-            downloadResults() {
-                const results = {
-                    transcript: this.transcription.textContent,
-                    topics: Array.from(this.topicsList.children).map(topic => ({
-                        title: topic.querySelector('.topic-title').textContent,
-                        content: topic.querySelector('.topic-content').textContent
-                    }))
-                };
-
-                const blob = new Blob([JSON.stringify(results, null, 2)], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'video_analysis.json';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-            }
-
-            updateStatus(message) {
-                this.statusMessage.textContent = message;
-            }
-
-            updateProgress(percent) {
-                this.progressBar.style.width = `${percent}%`;
-            }
-
-            showError(message) {
-                this.errorAlert.textContent = message;
-                this.errorAlert.style.display = 'block';
-                this.successAlert.style.display = 'none';
-                setTimeout(() => {
-                    this.errorAlert.style.display = 'none';
-                }, 5000);
-            }
-
-            showSuccess(message) {
-                this.successAlert.textContent = message;
-                this.successAlert.style.display = 'block';
-                this.errorAlert.style.display = 'none';
-                setTimeout(() => {
-                    this.successAlert.style.display = 'none';
-                }, 5000);
-            }
-
-            showSpinner() {
-                this.spinner.style.display = 'inline-block';
-            }
-
-            hideSpinner() {
-                this.spinner.style.display = 'none';
-            }
-
-            clearResults() {
-                this.transcription.textContent = '';
-                this.topicsList.innerHTML = '';
-                this.progressBar.style.width = '0%';
-                this.errorAlert.style.display = 'none';
-                this.successAlert.style.display = 'none';
-                this.resultsSection.style.display = 'none';
-            }
-        }
-
-        // Initialize the application
+    <script type="text/javascript" src="https://unpkg.com/jsmind@0.8.6/es6/jsmind.js"></script>
+    <script>
+        // Make jsMind available globally
+        window.jsMind = jsMind;
+    </script>
+    <script>
+        // Check if JSMind loaded
         window.addEventListener('DOMContentLoaded', () => {
-            new VideoAnalyzer();
+            console.log('Checking JSMind availability:', typeof jsMind);
+            const mindmapContainer = document.getElementById('mindmap');
+            console.log('Mindmap container:', mindmapContainer);
         });
     </script>
+    <script type="module" src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
