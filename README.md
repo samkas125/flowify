@@ -1,7 +1,5 @@
 # Flowify
 
-![Flowify Logo](assets/logo.png)
-
 ## 🎯 Overview
 Flowify is an intelligent web application that transforms video content into intuitive, visual flow charts. By leveraging advanced NLP techniques and clustering algorithms, Flowify automatically organizes video content into coherent topics and subtopics.
 
