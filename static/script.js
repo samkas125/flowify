@@ -782,9 +782,12 @@ class TopicMindmap {
     }
 
     extractTimestamp(text) {
-        const match = text.match(/\[(\d{2}):(\d{2}):(\d{2})\]/);
+        // const match = text.match(/\[(\d{2}):(\d{2}):(\d{2})\]/);
+        const match = text.match(/\[(\d+)\]/);
         if (match) {
-            const [_, hours, minutes, seconds] = match;
+            console.log("Matched!!");
+            const [seconds] = match;
+            return seconds;
             const timeInSeconds = parseInt(hours) * 3600 + parseInt(minutes) * 60 + parseInt(seconds);
             console.log('Extracted timestamp:', timeInSeconds, 'from text:', text);
             return timeInSeconds;

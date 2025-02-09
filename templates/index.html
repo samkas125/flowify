@@ -3,77 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Video Topic Analyzer</title>
+    <title>Flowify</title>
     
-    <!-- Styles -->
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <link type="text/css" rel="stylesheet" href="https://unpkg.com/jsmind@0.8.6/style/jsmind.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
 <body>
-    <div class="container">
-        <h1>Video Topic Analyzer</h1>
+    <div class="app-container">
+        <header class="app-header">
+            <div class="logo-container">
+                <i class="fas fa-project-diagram logo-icon"></i>
+                <h1>Flowify</h1>
+            </div>
+        </header>
 
-        <div class="upload-section">
-            <div class="upload-container">
-                <label for="fileInput" class="upload-button">
-                    Choose Video File
-                </label>
-                <input type="file" id="fileInput" accept="video/*">
+        <main class="main-content">
+            <div class="upload-panel">
+                <div class="upload-section">
+                    <div class="upload-container" id="dropZone">
+                        <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                        <label for="fileInput" class="upload-label">
+                            <span class="upload-text">Drop video file here or click to upload</span>
+                            <span class="upload-subtext">Supports MP4, WebM, MOV formats</span>
+                        </label>
+                        <input type="file" id="fileInput" accept="video/*">
+                    </div>
+
+                    <div class="model-selector">
+                        <label for="modelSelector" class="model-label">Processing Model</label>
+                        <div class="select-wrapper">
+                            <select id="modelSelector">
+                                <option value="Xenova/whisper-tiny.en">Whisper Tiny (Fast)</option>
+                                <option value="Xenova/whisper-base.en">Whisper Base</option>
+                                <option value="Xenova/whisper-small.en" selected>Whisper Small</option>
+                                <option value="Xenova/whisper-medium.en">Whisper Medium</option>
+                            </select>
+                            <i class="fas fa-chevron-down select-icon"></i>
+                        </div>
+                        <div id="modelStatus" class="model-status"></div>
+                    </div>
+                </div>
+
+                <div class="video-preview">
+                    <video id="videoPlayer" controls></video>
+                </div>
+
+                <div class="action-buttons">
+                    <button id="transcribeButton" class="primary-button" disabled>
+                        <i class="fas fa-microphone"></i>
+                        Transcribe Video
+                    </button>
+                    <button id="analyzeButton" class="secondary-button" disabled>
+                        <i class="fas fa-brain"></i>
+                        Analyze Topics
+                    </button>
+                </div>
+
+                <div class="progress-container">
+                    <div class="status-text" id="status">Ready to process</div>
+                    <div class="progress-bar">
+                        <div class="progress"></div>
+                    </div>
+                </div>
             </div>
 
-            <div class="model-selector">
-                <select id="modelSelector">
-                    <option value="Xenova/whisper-tiny.en">Whisper Tiny (Fast)</option>
-                    <option value="Xenova/whisper-base.en">Whisper Base</option>
-                    <option value="Xenova/whisper-small.en" selected>Whisper Small</option>
-                    <option value="Xenova/whisper-medium.en">Whisper Medium</option>
-                </select>
-                <div id="modelStatus"></div>
+            <div class="results-panel">
+                <div class="transcription-container">
+                    <h2><i class="fas fa-file-alt"></i> Transcription</h2>
+                    <div id="transcription" class="transcription-content"></div>
+                </div>
+
+                <div class="topics-container">
+                    <h2><i class="fas fa-list"></i> Topics</h2>
+                    <div id="topicResults" class="topics-content"></div>
+                </div>
             </div>
-        </div>
-
-        <div class="video-container">
-            <video id="videoPlayer" controls></video>
-        </div>
-
-        <div class="controls">
-            <button id="transcribeButton" disabled>Transcribe Video</button>
-            <button id="analyzeButton">Analyze Topics</button>
-        </div>
-
-        <div class="progress-container">
-            <div id="status">Ready to process</div>
-            <div class="progress-bar">
-                <div class="progress"></div>
-            </div>
-        </div>
-
-        <div class="content-container">
-            <div class="transcription-container">
-                <h2>Transcription</h2>
-                <div id="transcription"></div>
-            </div>
-
-            <div class="topics-container">
-                <h2>Topics</h2>
-                <div id="topicResults"></div>
-            </div>
-        </div>
+        </main>
     </div>
 
     <!-- Mindmap Overlay -->
     <div id="mindmapOverlay" class="mindmap-overlay">
         <div class="mindmap-content">
-            <!-- Video Section -->
             <div id="videoSection" class="video-section">
-                <video id="overlayVideo" controls>
-                    Your browser does not support the video element.
-                </video>
+                <div class="video-player-container">
+                    <video id="overlayVideo" controls>
+                        Your browser does not support the video element.
+                    </video>
+                </div>
                 <div id="videoInfo" class="video-info"></div>
             </div>
             
-            <!-- Mindmap Section -->
             <div class="mindmap-section">
                 <div class="mindmap-toolbar">
                     <button id="backButton" class="tool-button">
@@ -100,21 +120,9 @@
         </div>
     </div>
 
-    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/@xenova/transformers@2.16.0"></script>
     <script type="text/javascript" src="https://unpkg.com/jsmind@0.8.6/es6/jsmind.js"></script>
-    <script>
-        // Make jsMind available globally
-        window.jsMind = jsMind;
-    </script>
-    <script>
-        // Check if JSMind loaded
-        window.addEventListener('DOMContentLoaded', () => {
-            console.log('Checking JSMind availability:', typeof jsMind);
-            const mindmapContainer = document.getElementById('mindmap');
-            console.log('Mindmap container:', mindmapContainer);
-        });
-    </script>
+    <script>window.jsMind = jsMind;</script>
     <script type="module" src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
