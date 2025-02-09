@@ -364,7 +364,7 @@ class TopicMindmap {
                 }
                 
                 // Extract timestamp from content if available
-                let timeInSeconds = segmentInfo.timestamp;
+                let timeInSeconds = segmentInfo.timestamp.replace("[", "").replace("]", "");
                 
                 // If the timestamp is a string with format [HH:MM:SS], convert it
                 if (typeof timeInSeconds === 'string' && timeInSeconds.match(/^\[\d{2}:\d{2}:\d{2}\]$/)) {
