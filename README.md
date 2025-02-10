@@ -1,5 +1,5 @@
 <div align="left">
-  <img src="assets/logo.png" alt="flowify" width="200"/>
+  <img src="assets/logo_bg.png" alt="flowify" width="200"/>
 </div>
 
 ## Overview
