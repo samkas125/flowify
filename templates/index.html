@@ -30,21 +30,6 @@
                         <input type="file" id="fileInput" accept="video/*">
                     </div>
 
-                    <div class="model-selector">
-                        <label for="modelSelector" class="model-label">Processing Model</label>
-                        <div class="select-wrapper">
-                            <select id="modelSelector">
-                                <option value="Xenova/whisper-tiny.en">Whisper Tiny (Fast)</option>
-                                <option value="Xenova/whisper-base.en">Whisper Base</option>
-                                <option value="Xenova/whisper-small.en" selected>Whisper Small</option>
-                                <option value="Xenova/whisper-medium.en">Whisper Medium</option>
-                            </select>
-                            <i class="fas fa-chevron-down select-icon"></i>
-                        </div>
-                        <div id="modelStatus" class="model-status"></div>
-                    </div>
-                </div>
-
                 <div class="video-preview">
                     <video id="videoPlayer" controls></video>
                 </div>
@@ -120,7 +105,6 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@xenova/transformers@2.16.0"></script>
     <script type="text/javascript" src="https://unpkg.com/jsmind@0.8.6/es6/jsmind.js"></script>
     <script>window.jsMind = jsMind;</script>
     <script type="module" src="{{ url_for('static', filename='script.js') }}"></script>

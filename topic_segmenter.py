@@ -14,49 +14,92 @@ class TopicSegmenter:
         self.min_segment_size = min_segment_size
         self.topic_similarity_threshold = topic_similarity_threshold
         self.keyword_extractor = KeyBERT()
-        
+
         self.vectorizer = TfidfVectorizer(
             stop_words='english',
             min_df=1,
             max_df=0.95,
             ngram_range=(1, 2)
         )
-        
+
         self.segment_vectorizer = TfidfVectorizer(
             stop_words='english',
             min_df=1,
             max_df=1.0,
             ngram_range=(1, 2)
         )
-        
+
         self.lemmatizer = WordNetLemmatizer()
         self.topic_history = []
         self.fitted_vectorizer = None
+
+    def split_transcript(self, transcript):
+        # Regular expression to find timestamps and the associated text
+        pattern = r"\[(\d+)\]\s*(.*?)\s*(?=\[\d+\]|$)"
+        matches = re.findall(pattern, transcript, re.DOTALL)
+
+        # Sort the matches based on the numeric timestamp
+        matches.sort(key=lambda x: int(x[0]))
+
+        # Prepare list for 10-second segments
+        result = []
+        current_segment = ""
+        current_time = 0
+
+        for timestamp, text in matches:
+            timestamp = int(timestamp)
         
+            # If we're still on the same 10-second bucket
+            if timestamp < current_time + 10:
+                current_segment += " " + text.strip()
+            else:
+                # Add the current segment and start a new one
+                result.append(current_segment.strip())
+                current_segment = text.strip()
+                current_time += 10
+                # Catch up in case there are gaps in timestamps
+                while timestamp >= current_time + 10:
+                    result.append("")  # fill missing segments with empty strings
+                    current_time += 10
+
+        # Add the last segment
+        if current_segment:
+            result.append(current_segment.strip())
+
+        return result
+
     def preprocess_text(self, text):
-        sentences = sent_tokenize(text)
-        original_sentences = sentences.copy()
-        
-        cleaned_sentences = []
-        for sentence in sentences:
-            sentence = re.sub(r'^[^:]+:', '', sentence).strip()
-            sentence = re.sub(r'[^\w\s]', '', sentence.lower())
-            words = word_tokenize(sentence)
-            lemmatized = [self.lemmatizer.lemmatize(word) for word in words]
-            cleaned_sentence = ' '.join(lemmatized)
-            cleaned_sentences.append(cleaned_sentence)
-            
-        return cleaned_sentences, original_sentences
-    
+        """
+        Split the transcript into segments based on 10-second intervals.
+        Each segment starts with a timestamp.
+        """
+        return self.split_transcript(text), [text]
+        segments = []
+        current_segment = []
+        lines = text.splitlines()
+
+        for line in lines:
+            if re.match(r'^\[\d+\]', line):  # Check if the line starts with a timestamp
+                if current_segment:
+                    segments.append(' '.join(current_segment))
+                    current_segment = []
+            current_segment.append(line)
+
+        # Add the last segment if it exists
+        if current_segment:
+            segments.append(' '.join(current_segment))
+
+        return segments, lines
+
     def get_topic_fingerprint(self, segment_text):
         cleaned_text = ' '.join([re.sub(r'^[^:]+:', '', sent).strip() for sent in segment_text])
-        
+
         if self.fitted_vectorizer is None:
             self.fitted_vectorizer = self.segment_vectorizer.fit([cleaned_text])
             tfidf_matrix = self.fitted_vectorizer.transform([cleaned_text])
         else:
             tfidf_matrix = self.fitted_vectorizer.transform([cleaned_text])
-            
+
         return tfidf_matrix.toarray()[0]
 
     def compare_with_previous_topics(self, current_segment):
@@ -70,27 +113,27 @@ class TopicSegmenter:
         for idx, (topic_fingerprint, _, _, _) in enumerate(self.topic_history):
             if len(topic_fingerprint) != len(current_fingerprint):
                 continue
-                
+
             similarity = cosine_similarity([topic_fingerprint], [current_fingerprint])[0][0]
             if similarity > max_similarity:
                 max_similarity = similarity
                 best_match_idx = idx
 
         return best_match_idx, max_similarity
-    
+
     def extract_keywords(self, sentences, top_n=3):
         if isinstance(sentences, list):
             text = ' '.join(sentences)
         else:
             text = sentences
-            
+
         keywords = self.keyword_extractor.extract_keywords(
-            text, 
-            keyphrase_ngram_range=(1, 1), 
+            text,
+            keyphrase_ngram_range=(1, 1),
             stop_words='english',
             top_n=top_n
         )
-        
+
         sorted_keywords = sorted(keywords, key=lambda x: x[1], reverse=True)
         return [kw[0] for kw in sorted_keywords[:top_n]]
 
@@ -100,42 +143,45 @@ class TopicSegmenter:
         """
         chunks = re.findall(r'\[(\d+)\](.*?)(?=\[\d+\]|$)', transcript, re.DOTALL)
         sentence = sentence.strip().lower()
-        
+
         previous_timestamp = 0
         current_timestamp = 0
-        
+
         for i, (timestamp, text) in enumerate(chunks):
             current_timestamp = int(timestamp)
             text = text.strip().lower()
-            
+
             if sentence in text or text in sentence:
                 # Try to get the timestamp after the previous timestamp
                 if i > 0 and i < len(chunks):
                     return current_timestamp
                 return previous_timestamp
-            
+
             previous_timestamp = current_timestamp
-                
+
         return current_timestamp  # Return last timestamp if sentence not found
 
-    
+
     def segment_transcript(self, text):
         cleaned_sentences, original_sentences = self.preprocess_text(text)
+        print("preprocessed")
         similarity_matrix = self.calculate_similarity_matrix(cleaned_sentences)
+        print("created similarity matrix")
         initial_boundaries = self.detect_topic_boundaries(similarity_matrix)
-        
+        print("detected topic boundaries")
+
         final_segments = []
         topic_mappings = []
         current_topic_id = 0
-        
+
         start_idx = 0
-        for boundary in initial_boundaries + [len(original_sentences)]:
+        for boundary in initial_boundaries + [len(cleaned_sentences)]:
             if boundary - start_idx < self.min_segment_size:
                 continue
-                
-            current_segment = original_sentences[start_idx:boundary]
+
+            current_segment = cleaned_sentences[start_idx:boundary]
             matching_topic_idx, similarity = self.compare_with_previous_topics(current_segment)
-            
+
             if matching_topic_idx is not None and similarity > self.topic_similarity_threshold:
                 topic_id = matching_topic_idx
                 old_fingerprint, topic_name, segments, _ = self.topic_history[matching_topic_idx]
@@ -151,11 +197,11 @@ class TopicSegmenter:
                 topic_fingerprint = self.get_topic_fingerprint(current_segment)
                 closest_timestamp = self.find_closest_timestamp(current_segment[-1], text)
                 self.topic_history.append((topic_fingerprint, topic_name, [current_segment], closest_timestamp))
-            
+
             final_segments.append(current_segment)
             topic_mappings.append(topic_id)
             start_idx = boundary
-            
+
         return final_segments, topic_mappings, self.topic_history
 
     def calculate_similarity_matrix(self, sentences):
@@ -165,30 +211,31 @@ class TopicSegmenter:
     def detect_topic_boundaries(self, similarity_matrix):
         boundaries = []
         n_sentences = len(similarity_matrix)
-        
+
         for i in range(self.window_size, n_sentences - self.window_size):
             prev_window = similarity_matrix[i-self.window_size:i, i-self.window_size:i]
             prev_similarity = np.mean(prev_window)
-            
+
             next_window = similarity_matrix[i:i+self.window_size, i:i+self.window_size]
             next_similarity = np.mean(next_window)
-            
+
             cross_window = similarity_matrix[i-self.window_size:i, i:i+self.window_size]
             cross_similarity = np.mean(cross_window)
-            
+
             if (cross_similarity < self.similarity_threshold and
                 cross_similarity < prev_similarity * 0.8 and
                 cross_similarity < next_similarity * 0.8 and
                 (len(boundaries) == 0 or i - boundaries[-1] >= self.window_size)):
                 boundaries.append(i)
-        
+
         return boundaries
-    
+
 if __name__ == "__main__":
     transcript = """
 [0] Translator: Joseph Geni
 Reviewer: Morton Bast There are a lot of ways
-the people around us can help improve our lives We don't bump into every neighbor, so a lot of wisdom never gets passed on,. [26] though we do share the same public spaces So over the past few years,
+the people around us can help improve our lives We don't bump into every neighbor, so a lot of wisdom never gets passed on,. [26] though we do share the same
+public spaces So over the past few years,
 I've tried ways to share more with my neighbors in public space, using simple tools like
 stickers, stencils and chalk And these projects came
 from questions I had, like:. [41] How much are my neighbors
@@ -209,7 +256,7 @@ and she was a mother to me And her death was sudden and unexpected And I thought
 gratitude for the time I've had And  brought clarity to the things
 that are meaningful to my life now But I struggle to maintain
 this perspective in my daily life I feel like it's easy to get
-caught up in the day-to-day, and forget what really matters to you. [160] So with help from old and new friends, I turned the side of this abandoned 
+caught up in the day-to-day, and forget what really matters to you. [160] So with help from old and new friends, I turned the side of this abandoned
 house into a giant chalkboard, and stenciled it with
 a fill-in-the-blank sentence: "Before I die, I want to " So anyone walking by
 can pick up a piece of chalk,. [176] reflect on their life, and share their personal
@@ -233,7 +280,7 @@ most to us as we grow and change I made this last year, and started receiving hu
 of messages from passionate people who wanted to make a wall
 with their community. [284] So, my civic center colleagues
 and I made a tool kit, and now walls have been made
-in countries around the world, including Kazakhstan, South Africa, Australia,. [299] Argentina, and beyond Together, we've shown how powerful        
+in countries around the world, including Kazakhstan, South Africa, Australia,. [299] Argentina, and beyond Together, we've shown how powerful
 our public spaces can be if we're given the opportunity
 to have a voice, and share more with one another Two of the most valuable things we have. [315] are time, and our relationships
 with other people In our age of increasing distractions, it's more important than ever
@@ -245,7 +292,7 @@ reflect what matters to us,. [347] as individuals and as a community, and with m
 our hopes, fears and stories, the people around us can not only
 help us make better places, they can help us lead better lives Thank you. [362] (Applause) Thank you (Applause)
     """
-    
+
     segmenter = TopicSegmenter(
         window_size=4,
         similarity_threshold=0.25,
@@ -253,9 +300,9 @@ help us make better places, they can help us lead better lives Thank you. [362] 
         min_segment_size=3,
         topic_similarity_threshold=0.35
     )
-    
+
     segments, topic_mappings, topic_history = segmenter.segment_transcript(transcript)
-    
+
     print("Topic Segmentation Analysis:\n")
     print(topic_history)
     for i, (segment, topic_id) in enumerate(zip(segments, topic_mappings)):
